@@ -1,0 +1,1158 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>專注輔助</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        /* 使用 Inter 字體以獲得乾淨現代的外觀 */
+        body {
+            font-family: 'Inter', sans-serif;
+            -webkit-font-smoothing: antialiased;
+            -moz-osx-font-smoothing: grayscale;
+            /* 保持乾淨柔和的背景漸層 */
+            background: linear-gradient(135deg,#C5E4FF 0%, #90CAF9 100%)
+        }
+        /* 隱藏數字輸入框的上下箭頭 */
+        input[type="number"]::-webkit-inner-spin-button, 
+        input[type="number"]::-webkit-outer-spin-button { 
+            -webkit-appearance: none;
+            margin: 0;
+        }
+        input[type="number"] {
+            -moz-appearance: textfield;
+        }
+
+        /* 讓計時器顯示區的字體更大、更突出 */
+        #timer-display {
+            letter-spacing: 0.1em;
+        }
+        
+        /* 確保考題在彈出視窗中垂直堆疊 */
+        .question-card {
+            width: 100%;
+            margin-bottom: 1.5rem;
+        }
+
+        /* 自定義暫停按鈕的 disabled 樣式：灰色且不可點擊 */
+        #pause-timer-btn:disabled {
+            background-color: #9ca3af; /* 灰色背景 */
+            pointer-events: none; /* 禁用點擊事件 */
+            opacity: 0.9; 
+            box-shadow: none; /* 禁用時移除陰影 */
+        }
+
+        #pause-timer-btn:disabled:hover {
+            background-color: #9ca3af;
+        }
+
+        /* 美化 Input 欄位 */
+        .focus-ring-blue {
+            transition: all 0.2s;
+            border-color: #cbd5e1; /* 初始邊框顏色 */
+        }
+        .focus-ring-blue:focus {
+            border-color: #3b82f6; /* focus 邊框顏色 */
+            box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.5); /* 柔和的藍色光暈 */
+        }
+    </style>
+</head>
+<body class="min-h-screen p-4 sm:p-8">
+    <div id="app" class="max-w-6xl mx-auto">
+
+        <h1 class="text-4xl font-extrabold text-gray-800 mb-5 border-b-4 border-indigo-400 pb-3 tracking-wider">
+            📚️ 專注系統
+        </h1>
+        
+        <button id="open-instructions-btn" class="mb-6 px-5 py-2.5 bg-indigo-500 hover:bg-indigo-600 text-white font-bold rounded-xl transition duration-200 shadow-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2">
+            查看系統使用說明
+        </button>
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-10">
+
+            <div id="timer-section" class="bg-white p-8 rounded-2xl shadow-xl h-fit transition duration-300 hover:shadow-2xl hover:shadow-indigo-200/50 border border-indigo-100">
+                
+                <div id="nfc-display" class="text-base font-medium text-center py-2 px-3 rounded-lg transition duration-300 mb-6 bg-gray-100 border-2 border-gray-300 flex items-center justify-center">
+                    <svg class="w-5 h-5 mr-2 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 18h.01M8 21h8a2 2 0 002-2V5a2 2 0 00-2-2H8a2 2 0 00-2 2v14a2 2 0 002 2z"></path></svg>
+                    手機狀態：<span id="nfc-status-text" class="text-gray-500 ml-1">未啟動倒數 (未放置)</span>
+                </div>
+                <h2 class="text-2xl font-bold text-indigo-600 mb-5 flex items-center">
+                    <svg class="w-6 h-6 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+                    專注倒數計時器
+                </h2>
+
+                <div id="timer-display" class="text-6xl sm:text-7xl font-mono font-bold text-center py-10 mb-4 rounded-xl bg-indigo-50/70 text-indigo-800 shadow-inner border border-indigo-200">
+                    00:05:00
+                </div>
+
+                <div id="pause-count-display" class="text-sm text-center font-semibold text-gray-600 mb-6">
+                    暫停機會：請設定小時數以獲得次數。
+                </div>
+                <div class="mb-6">
+                    <label class="block text-sm font-semibold text-gray-700 mb-2">
+                        設定專注時間 (時 / 分 / 秒)
+                    </label>
+                    <div class="flex space-x-3">
+                        <input type="number" id="hours-input" value="0" min="0" max="99" placeholder="時" class="flex-1 p-3 border rounded-lg focus-ring-blue text-lg text-center shadow-sm bg-white">
+                        <input type="number" id="minutes-input" value="5" min="0" max="59" placeholder="分" class="flex-1 p-3 border rounded-lg focus-ring-blue text-lg text-center shadow-sm bg-white">
+                        <input type="number" id="seconds-input" value="0" min="0" max="59" placeholder="秒" class="flex-1 p-3 border rounded-lg focus-ring-blue text-lg text-center shadow-sm bg-white">
+                    </div>
+                </div>
+                
+                <div class="flex space-x-4">
+                    <button id="start-timer-btn" class="flex-1 bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-3 px-4 rounded-xl transition duration-200 shadow-md hover:shadow-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2">
+                        <span id="start-timer-text">設定並開始倒數</span>
+                    </button>
+                    <button id="pause-timer-btn" class="bg-yellow-500 hover:bg-yellow-600 text-white font-bold py-3 px-4 rounded-xl transition duration-200 shadow-md hover:shadow-lg focus:outline-none focus:ring-2 focus:ring-yellow-500 focus:ring-offset-2" disabled>
+                        <span id="pause-timer-text">暫停</span>
+                    </button>
+                </div>
+                <button id="reset-timer-btn" class="mt-4 w-full bg-red-500 hover:bg-red-600 text-white font-bold py-3 px-4 rounded-xl transition duration-200 shadow-md hover:shadow-lg focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2">
+                    重設計時器
+                </button>
+
+                <p id="timer-status" class="mt-4 text-center text-sm text-gray-500">計時器尚未啟動。</p>
+            </div>
+            
+            <div id="ppt-section" class="bg-white p-8 rounded-2xl shadow-xl transition duration-300 hover:shadow-2xl hover:shadow-green-200/50 border border-green-100">
+                <h2 class="text-2xl font-bold text-green-600 mb-5 flex items-center">
+                    <svg class="w-6 h-6 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 014 4v2a4 4 0 01-4 4H7z"></path></svg>
+                    模擬測驗 (AI出題)
+                </h2>
+                
+                <div class="mb-6">
+                    <label class="block text-sm font-semibold text-gray-700 mb-2">
+                        選擇文件檔案 (僅限PDF檔)
+                    </label>
+                    <input type="file" id="ppt-upload" class="block w-full text-sm text-gray-600
+                        file:mr-4 file:py-2 file:px-4
+                        file:rounded-full file:border-0
+                        file:text-sm file:font-semibold
+                        file:bg-green-100 file:text-green-700
+                        hover:file:bg-green-200 cursor-pointer
+                    ">
+                    <p id="file-name-display" class="mt-2 text-sm text-gray-500">尚未選擇檔案。</p>
+                </div>
+                
+                <button id="analyze-ppt-btn" class="w-full bg-green-600 hover:bg-green-700 text-white font-bold py-3 px-4 rounded-xl transition duration-200 shadow-md hover:shadow-lg focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-offset-2 disabled:bg-green-300" disabled>
+                    啟動 AI 分析與出題(建議結束時再上傳)
+                </button>
+                
+                <div id="ai-feedback" class="mt-8 pt-4 border-t border-gray-200">
+                    <h3 class="text-xl font-semibold text-gray-800 mb-3">AI 模擬考題狀態：</h3>
+
+                    <p class="text-gray-500 italic p-4 rounded-lg bg-green-50 border border-green-200 hidden" id="analysis-success-message">
+                        ✅ AI 分析完成，已生成考題。
+                    </p>
+                    
+                    <button id="start-quiz-btn" class="hidden w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 px-4 rounded-xl transition duration-200 shadow-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2">
+                        我要作答 (點擊開始測驗)
+                    </button>
+                    <div id="loading-spinner" class="hidden flex items-center justify-center text-green-600 mt-4 p-4 rounded-xl bg-green-50 border border-green-200">
+                        <svg class="animate-spin -ml-1 mr-3 h-5 w-5 text-green-600" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                            <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                            <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                        </svg>
+                        系統正在分析簡報內容並生成考題中...
+                    </div>
+                </div>
+                
+                <div id="error-message" class="hidden mt-4 p-4 bg-red-100 border border-red-400 text-red-700 rounded-xl">
+                    </div>
+            </div>
+            
+        </div>
+        
+        <div id="instructions-modal" class="hidden fixed inset-0 bg-black bg-opacity-70 z-50 flex items-center justify-center p-4">
+            <div class="bg-white rounded-2xl shadow-2xl max-w-2xl w-full transform transition-all overflow-hidden">
+                <div class="p-6 border-b flex justify-between items-center bg-indigo-700 text-white">
+                    <h3 class="text-2xl font-bold">💡 系統使用說明</h3>
+                    <button id="close-instructions-modal-btn" class="text-white hover:text-gray-200">
+                        <svg class="w-7 h-7" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+                    </button>
+                </div>
+                <div class="p-8">
+                    <ul class="list-disc list-inside space-y-2 text-gray-700 font-medium text-base">
+                        <li>倒數計時器：設定您的專注時間。總時間不可超過 <span class="font-bold text-red-600">20 小時 0 分 0 秒</span>，超過將被系統拒絕，以確保學習效率。</li>
+                        <li>暫停機會：只要設定了非零時間，至少會有 1 次暫停機會。若設定x小時，則會有x次暫停機會。次數用完後，「暫停」鍵會變為「無法暫停」。</li>
+                        <li>AI 模擬測驗：上傳文件後點擊「啟動 AI 分析與出題」。成功後，點擊「我要作答」即可開始測驗。</li>
+                        <li>手機放置：系統將偵測手機是否放置在 NFC 感應區。<span class="font-bold text-red-600">目前為模擬狀態</span>：只有在倒數進行中或倒數結束等待測驗期間，才視為手機已放置。</li>
+                        <li>懲罰機制：在所有題目作答完畢後，若答錯的題目數量 <span class="font-bold text-red-600">超過 1 題</span> (即答錯 2 題或以上)，將會觸發「懲罰」視窗，需要手動關閉才能重設。</li>
+                        <li>提前結束/時間到機制：倒數開始後，「重設計時器」會變為「提前結束」。無論是時間到、提前結束，都必須生成考題並完成所有題目作答，才能開始新一輪倒數。</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+        <div id="quiz-modal" class="hidden fixed inset-0 bg-black bg-opacity-70 z-50 flex items-center justify-center p-4">
+            <div class="bg-white rounded-2xl shadow-2xl max-w-4xl w-full transform transition-all overflow-hidden max-h-[95vh] flex flex-col">
+                <div class="p-6 border-b flex justify-between items-center bg-indigo-700 text-white">
+                    <h3 class="text-2xl font-bold">📝 模擬測驗：根據文件生成的考題</h3>
+                    <button id="close-quiz-modal-btn" class="text-white hover:text-gray-200">
+                        <svg class="w-7 h-7" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+                    </button>
+                </div>
+                <div id="quiz-modal-content" class="p-8 space-y-10 overflow-y-auto">
+                    <p class="text-gray-500 italic">請先啟動 AI 分析以生成考題。</p>
+                </div>
+            </div>
+        </div>
+        <div id="penalty-modal" class="hidden fixed inset-0 bg-black bg-opacity-70 z-50 flex items-center justify-center p-4">
+            <div class="bg-white rounded-2xl shadow-2xl max-w-sm w-full transform transition-all overflow-hidden border-4 border-red-500">
+                <div class="p-8 text-center">
+                    <h3 class="text-3xl font-extrabold text-red-600 mb-4 animate-pulse">🚨 懲罰通知 🚨</h3>
+                    <p class="text-xl text-gray-800">貼臉開大。</p>
+                    <p class="text-2xl font-extrabold text-red-700 mt-4">懲罰</p>
+                    <button id="close-penalty-modal-btn" class="mt-8 w-full bg-red-600 hover:bg-red-700 text-white font-bold py-3 px-4 rounded-xl transition duration-200 shadow-lg">
+                        我知道了
+                    </button>
+                </div>
+            </div>
+        </div>
+        </div>
+
+    <script>
+        // ----------------------------------------------------
+        // 0. API 配置
+        // ----------------------------------------------------
+        const BACKEND_API_URL = "http://127.0.0.1:5000/api/analyze-ppt"; 
+        
+        // ----------------------------------------------------
+        // 1. 倒數計時器邏輯
+        // ----------------------------------------------------
+
+        let countdown;
+        let timeLeft = 0; 
+        let isPaused = false;
+        let initialTime = { hours: 0, minutes: 5, seconds: 0 }; 
+
+        let remainingPauses = 0; 
+        let totalPauseAllowance = 0; 
+        
+        // --- 全域狀態控制 (用於測驗閘門) ---
+        let totalQuestions = 0; 
+        let questionsAnsweredCount = 0; 
+        let isQuizCompleted = true; // 預設為 true，允許第一次開始
+        let isQuizGenerated = false; // true if file uploaded & analysis succeeded
+        let isSessionEndedWithPendingAction = false; // True if session ended and next start is blocked until quiz is done/file is uploaded.
+        // ------------------------------------
+
+        const timerDisplay = document.getElementById('timer-display');
+        const hoursInput = document.getElementById('hours-input');
+        const minutesInput = document.getElementById('minutes-input');
+        const secondsInput = document.getElementById('seconds-input');
+        const startBtn = document.getElementById('start-timer-btn');
+        const pauseBtn = document.getElementById('pause-timer-btn');
+        const resetBtn = document.getElementById('reset-timer-btn'); 
+        const startText = document.getElementById('start-timer-text');
+        const pauseText = document.getElementById('pause-timer-text');
+        const timerStatus = document.getElementById('timer-status');
+        const pauseCountDisplay = document.getElementById('pause-count-display'); 
+        const analyzeBtn = document.getElementById('analyze-ppt-btn'); // 獲取 AI 按鈕 DOM
+
+        // --- NFC 狀態相關 DOM 元素 ---
+        const nfcStatusText = document.getElementById('nfc-status-text');
+        const nfcDisplay = document.getElementById('nfc-display');
+        const nfcIcon = nfcDisplay.querySelector('svg'); 
+        // ------------------------------------
+
+        /**
+         * 更新暫停次數的介面顯示
+         */
+        function updatePauseCountDisplay() {
+            let statusText;
+            if (totalPauseAllowance === 0) {
+                 statusText = '請設定小時數以獲得次數。'; 
+                 pauseCountDisplay.innerHTML = `暫停機會：${statusText}`;
+                 return;
+            }
+
+            if (remainingPauses > 0) {
+                statusText = `<span class="text-green-600 font-bold">剩餘 ${remainingPauses} 次</span>`;
+            } else {
+                statusText = `<span class="text-red-600 font-bold">剩餘 0 次</span>`;
+                if (countdown && !isPaused) {
+                    pauseBtn.disabled = true;
+                    pauseText.textContent = "無法暫停";
+                }
+            }
+            pauseCountDisplay.innerHTML = `暫停機會：總共 ${totalPauseAllowance} 次 / (${statusText})`;
+        }
+
+
+        /**
+         * 格式化時間：將總秒數轉換為 HH:MM:SS 格式
+         * @param {number} totalSeconds 
+         * @returns {string} HH:MM:SS
+         */
+        function formatTime(totalSeconds) {
+            totalSeconds = Math.max(0, totalSeconds); 
+            const hours = Math.floor(totalSeconds / 3600);
+            const minutes = Math.floor((totalSeconds % 3600) / 60);
+            const seconds = totalSeconds % 60;
+            return `${String(hours).padStart(2, '0')}:${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`;
+        }
+
+        function updateTimerDisplay() {
+            timerDisplay.textContent = formatTime(timeLeft);
+            
+            if (timeLeft <= 60 && timeLeft > 0) {
+                timerDisplay.classList.add('text-red-600');
+                timerDisplay.classList.remove('text-indigo-800'); 
+            } else {
+                timerDisplay.classList.remove('text-red-600');
+                timerDisplay.classList.add('text-indigo-800'); 
+            }
+
+            if (timeLeft === 0) {
+                timerStatus.textContent = "倒數結束！時間到！";
+                timerStatus.classList.add('text-red-600', 'font-bold');
+            } else if (isPaused) {
+                timerStatus.textContent = "已暫停。";
+                timerStatus.classList.remove('text-red-600', 'font-bold');
+            } else {
+                timerStatus.textContent = "正在倒數中...";
+                timerStatus.classList.remove('text-red-600', 'font-bold');
+            }
+        }
+
+        /**
+         * 更新 NFC 模擬狀態的介面顯示 (已根據使用者要求修正邏輯)
+         */
+        function updateNfcStatusDisplay() {
+            let statusText;
+            
+            // 設定基礎樣式，減少重複
+            const baseClasses = 'text-base font-medium text-center py-2 px-3 rounded-lg transition duration-300 mb-6 flex items-center justify-center border-2';
+
+            if (countdown) { 
+                // 狀態 1: Timer is running -> 正在倒數中 (已放置)
+                statusText = '正在倒數中 (已放置)';
+                nfcStatusText.className = 'text-green-600 font-bold ml-1';
+                nfcDisplay.className = `${baseClasses} bg-green-100 border-green-400`;
+                nfcIcon.classList.remove('text-gray-500', 'text-yellow-700', 'text-red-600');
+                nfcIcon.classList.add('text-green-600');
+            } else if (isPaused) { 
+                // 狀態 2: Timer is paused -> 已暫停倒數 (未放置)
+                statusText = '已暫停倒數 (未放置)';
+                nfcStatusText.className = 'text-yellow-700 font-bold ml-1';
+                nfcDisplay.className = `${baseClasses} bg-yellow-100 border-yellow-400`;
+                nfcIcon.classList.remove('text-gray-500', 'text-green-600', 'text-red-600');
+                nfcIcon.classList.add('text-yellow-700');
+            } else if (isSessionEndedWithPendingAction) {
+                 // 狀態 3: Session ended (time up or early end) and waiting for quiz
+                 // 【關鍵修正】：如果倒數結束，手機仍視為「已放置」
+                statusText = '倒數已結束 (已放置)'; 
+                nfcStatusText.className = 'text-red-600 font-bold ml-1';
+                nfcDisplay.className = `${baseClasses} bg-red-100 border-red-400`;
+                nfcIcon.classList.remove('text-gray-500', 'text-yellow-700', 'text-green-600');
+                nfcIcon.classList.add('text-red-600');
+            } else {
+                // 狀態 4: Initial state or fully reset -> 未啟動倒數 (未放置)
+                statusText = '未啟動倒數 (未放置)';
+                nfcStatusText.className = 'text-gray-500 ml-1';
+                nfcDisplay.className = `${baseClasses} bg-gray-100 border-gray-300`;
+                nfcIcon.classList.remove('text-yellow-700', 'text-green-600', 'text-red-600');
+                nfcIcon.classList.add('text-gray-500');
+            }
+            
+            nfcStatusText.textContent = statusText;
+        }
+
+        /**
+         * 執行所有狀態和 UI 的完全重設，回到可設定時間的初始狀態。
+         */
+        function fullResetState() {
+            if (countdown) {
+                clearInterval(countdown);
+                countdown = null;
+            }
+            
+            // [新增] 通知後端：專注模式關閉
+            fetch('/api/set-focus-mode', {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({ active: false })
+            });
+
+            timeLeft = 0;
+            isPaused = false;
+            isQuizCompleted = true; // 允許下一輪開始
+            isSessionEndedWithPendingAction = false; // 解鎖開始按鈕
+            
+            // 重設暫停次數
+            totalPauseAllowance = 0;
+            remainingPauses = 0;
+            
+            // 重設 UI 輸入框值
+            hoursInput.value = initialTime.hours;
+            minutesInput.value = initialTime.minutes;
+            secondsInput.value = initialTime.seconds;
+
+            hoursInput.disabled = false;
+            minutesInput.disabled = false;
+            secondsInput.disabled = false;
+            
+            startText.textContent = "設定並開始倒數";
+            startBtn.disabled = false;
+            pauseBtn.disabled = true; 
+            pauseText.textContent = "暫停";
+            resetBtn.textContent = "重設計時器"; 
+            timerDisplay.classList.remove('text-red-600');
+            
+            // 【關鍵修正】：重設 AI 按鈕狀態
+            analyzeBtn.disabled = false; 
+            analyzeBtn.textContent = '啟動 AI 分析與出題';
+            analyzeBtn.classList.add('hover:bg-green-700');
+            analyzeBtn.classList.remove('disabled:bg-green-300'); 
+            
+            isQuizGenerated = false; // 必須重設此狀態，才能再次分析
+            
+            // 重新計算初始的暫停機會顯示
+            const h = parseInt(hoursInput.value) || 0;
+            const m = parseInt(minutesInput.value) || 0;
+            const s = parseInt(secondsInput.value) || 0;
+            const totalSeconds = (h * 3600) + (m * 60) + s;
+
+            if (totalSeconds > 0) {
+                totalPauseAllowance = (h === 0) ? 1 : h;
+                remainingPauses = totalPauseAllowance;
+            } else {
+                totalPauseAllowance = 0;
+                remainingPauses = 0;
+            }
+
+            updatePauseCountDisplay(); 
+            
+            timerDisplay.textContent = formatTime(initialTime.hours * 3600 + initialTime.minutes * 60 + initialTime.seconds);
+            timerStatus.textContent = "計時器尚未啟動。";
+            timerStatus.classList.remove('text-red-600', 'font-bold');
+            updateNfcStatusDisplay(); 
+        }
+
+        /**
+         * 處理時間結束 (自然結束或提前結束) 的邏輯
+         * @param {boolean} isEarlyEnd 是否為提前結束
+         */
+        function handleTimeEnd(isEarlyEnd) {
+            if (countdown) {
+                clearInterval(countdown);
+                countdown = null;
+            }
+            
+            // [新增] 通知後端：專注模式結束 (不管是時間到還是提前結束，都不用再罰了)
+            // 注意：這裡結束的是「手機拿走的懲罰」，「答錯題」還是會罰
+            fetch('/api/set-focus-mode', {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({ active: false })
+            });
+
+            isPaused = false;
+            startBtn.disabled = true;
+            pauseBtn.disabled = true;
+            
+            // 鎖定下一輪開始 (結束閘門啟動)
+            isSessionEndedWithPendingAction = true; 
+
+            // 允許檢視時間但不能修改
+            hoursInput.disabled = false; 
+            minutesInput.disabled = false;
+            secondsInput.disabled = false;
+
+            updateNfcStatusDisplay(); 
+            resetBtn.textContent = "已結束 (請做題目)"; // 統一顯示
+
+            if (isQuizGenerated) {
+                // 情境 1: 有題目，必須作答
+                timerStatus.textContent = isEarlyEnd ? "提前結束。請完成模擬測驗。" : "時間到！請完成模擬測驗。";
+                timerStatus.classList.add('text-red-600', 'font-bold');
+                // 如果是提前結束且有題目，強制打開測驗視窗 (不論是否在暫停中)
+                quizModal.classList.remove('hidden'); 
+                
+            } else {
+                // 情境 2: 無題目，必須上傳/分析
+                timerStatus.textContent = isEarlyEnd ? "提前結束。請上傳並分析檔案以生成考題。" : "時間到！請上傳並分析檔案以生成考題。";
+                timerStatus.classList.add('text-red-600', 'font-bold');
+            }
+        }
+
+
+        function startTimer() {
+            // [新增規則] 必須偵測到手機才能開始
+            if (nfcStatusText.textContent.includes('未放置') || nfcStatusText.textContent.includes('請放置')) {
+                alert("⚠️ 請先將手機放在感應區，才能開始專注！");
+                return; // 阻止開始
+            }
+
+            if (countdown) {
+                clearInterval(countdown);
+            }
+
+            // --- 鎖定閘門檢查 ---
+            if (isSessionEndedWithPendingAction) {
+                if (isQuizGenerated && !isQuizCompleted) {
+                     timerStatus.textContent = "必須先完成上輪的 AI 模擬測驗才能開始新一輪！";
+                } else if (!isQuizGenerated) {
+                     timerStatus.textContent = "請先上傳並分析檔案，生成考題後才能開始！";
+                }
+                timerStatus.classList.add('text-red-600', 'font-bold');
+                return;
+            }
+            // ------------------
+
+            if (!isPaused) {
+                const h = parseInt(hoursInput.value) || 0;
+                const m = parseInt(minutesInput.value) || 0;
+                const s = parseInt(secondsInput.value) || 0;
+                
+                const totalSeconds = (h * 3600) + (m * 60) + s;
+
+                if (h > 20 || (h === 20 && (m > 0 || s > 0))) {
+                    timerStatus.textContent = "警告：過久時間將使讀書效率低下，不可超過20小時！";
+                    timerStatus.classList.add('text-red-600', 'font-bold');
+                    return; 
+                }
+                if (totalSeconds === 0) {
+                    timerStatus.textContent = "請設定大於 0 的時間！";
+                    return;
+                }
+                
+                totalPauseAllowance = (h === 0) ? 1 : h;
+                remainingPauses = totalPauseAllowance;
+
+                initialTime = { hours: h, minutes: m, seconds: s }; 
+                timeLeft = totalSeconds;
+                
+                hoursInput.disabled = true;
+                minutesInput.disabled = true;
+                secondsInput.disabled = true;
+                
+                isQuizCompleted = false; 
+                resetBtn.textContent = "提前結束"; 
+            }
+            
+            isPaused = false;
+            isSessionEndedWithPendingAction = false; 
+            updateTimerDisplay();
+            updatePauseCountDisplay(); 
+            // updateNfcStatusDisplay(); // 改由輪詢自動更新
+            
+            startText.textContent = "已開始";
+            startBtn.disabled = true;
+            
+            if (remainingPauses <= 0) {
+                pauseBtn.disabled = true;
+                pauseText.textContent = "無法暫停"; 
+            } else {
+                pauseBtn.disabled = false;
+                pauseText.textContent = "暫停";
+            }
+
+            // [新增] 通知後端：專注模式開始！
+            fetch('/api/set-focus-mode', {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({ active: true })
+            });
+
+            countdown = setInterval(() => {
+                if (timeLeft > 0) {
+                    timeLeft--;
+                    updateTimerDisplay();
+                } else {
+                    handleTimeEnd(false);
+                    startText.textContent = "倒數結束";
+                }
+            }, 1000);
+        }
+
+        function togglePause() {
+            if (remainingPauses <= 0) {
+                 timerStatus.textContent = "暫停失敗：剩餘暫停次數已用完！";
+                 timerStatus.classList.add('text-red-600', 'font-bold');
+                 return;
+            }
+
+            if (countdown) {
+                clearInterval(countdown);
+                countdown = null;
+                isPaused = true;
+                startBtn.disabled = false;
+                
+                remainingPauses--;
+                
+                // 暫停後，暫停按鈕仍應保持禁用，直到使用者點擊繼續 (startBtn)
+                pauseBtn.disabled = true; 
+                pauseText.textContent = "暫停"; // 重置文字，等待下一輪暫停
+
+                updatePauseCountDisplay();
+
+                startText.textContent = "繼續倒數";
+                updateTimerDisplay();
+                updateNfcStatusDisplay(); 
+            }
+        }
+
+        /**
+         * 處理「提前結束」或「重設計時器」的邏輯 (修復暫停後提前結束的漏洞)
+         */
+        function endOrResetTimer() { 
+            // Case 1: 倒數正在進行中 (正常情況)
+            if (countdown) {
+                handleTimeEnd(true); 
+                
+            // Case 2: 倒數變數遺失 (重整網頁後)，但按鈕狀態是對的
+            // [修正] 加入 resetBtn.textContent 的判斷
+            } else if (resetBtn.textContent === "提前結束") {
+                handleTimeEnd(true);
+
+            // Case 3: 其他狀態
+            } else {
+                if (isSessionEndedWithPendingAction) {
+                     timerStatus.textContent = isQuizGenerated ? "請先完成上輪的 AI 模擬測驗才能重設！" : "請先上傳並分析檔案，生成考題後才能重設！";
+                     timerStatus.classList.add('text-red-600', 'font-bold');
+                     return;
+                }
+                fullResetState();
+            }
+        }
+
+        // 監聽所有時間輸入框的變化 (不變)
+        [hoursInput, minutesInput, secondsInput].forEach(input => {
+            input.addEventListener('input', () => {
+                let val = parseInt(input.value) || 0;
+                if (input.id !== 'hours-input') { 
+                    if (val < 0) val = 0;
+                    if (val > 59) val = 59;
+                } else { 
+                    if (val < 0) val = 0;
+                }
+                input.value = val;
+
+                if (!countdown) {
+                    const h = parseInt(hoursInput.value) || 0;
+                    const m = parseInt(minutesInput.value) || 0;
+                    const s = parseInt(secondsInput.value) || 0;
+                    const totalSeconds = (h * 3600) + (m * 60) + s;
+                    
+                    timerDisplay.textContent = formatTime(totalSeconds);
+                    
+                    if (totalSeconds > 0) {
+                        totalPauseAllowance = (h === 0) ? 1 : h;
+                    } else {
+                        totalPauseAllowance = 0;
+                    }
+                    remainingPauses = totalPauseAllowance;
+                    updatePauseCountDisplay();
+                    updateNfcStatusDisplay(); 
+                }
+            });
+        });
+        
+        // 初始化
+        timerDisplay.textContent = formatTime(initialTime.hours * 3600 + initialTime.minutes * 60 + initialTime.seconds);
+        const initialH = parseInt(hoursInput.value) || 0;
+        const initialM = parseInt(minutesInput.value) || 0;
+        const initialS = parseInt(secondsInput.value) || 0;
+        if ((initialH * 3600) + (initialM * 60) + initialS > 0) {
+             totalPauseAllowance = (initialH === 0) ? 1 : initialH;
+             remainingPauses = totalPauseAllowance;
+        }
+        updatePauseCountDisplay(); 
+        updateNfcStatusDisplay(); 
+
+        startBtn.addEventListener('click', startTimer);
+        pauseBtn.addEventListener('click', togglePause);
+        resetBtn.addEventListener('click', endOrResetTimer); 
+
+
+        // ----------------------------------------------------
+        // 2. PPT 上傳與 AI 實際分析邏輯 (連接後端 & 懲罰機制)
+        // ----------------------------------------------------
+
+        let generatedQuestionsData = []; 
+        let incorrectAnswerCount = 0; 
+        
+        const pptUpload = document.getElementById('ppt-upload');
+        // const analyzeBtn = document.getElementById('analyze-ppt-btn'); // 已經在上面宣告
+        const fileNameDisplay = document.getElementById('file-name-display');
+        const loadingSpinner = document.getElementById('loading-spinner');
+        const errorMessageDiv = document.getElementById('error-message');
+        const analysisSuccessMessage = document.getElementById('analysis-success-message');
+        const startQuizBtn = document.getElementById('start-quiz-btn');
+        const quizModal = document.getElementById('quiz-modal');
+        const closeQuizModalBtn = document.getElementById('close-quiz-modal-btn');
+        const quizModalContent = document.getElementById('quiz-modal-content');
+        
+        const penaltyModal = document.getElementById('penalty-modal');
+        const closePenaltyModalBtn = document.getElementById('close-penalty-modal-btn');
+
+        let uploadedFile = null;
+        
+        /**
+         * 測驗完成後處理，允許新一輪開始 (新增懲罰檢查)
+         */
+        function handleQuizCompletion() {
+            
+            // --- 執行最終懲罰檢查 (新的邏輯) ---
+            if (incorrectAnswerCount > 1) {
+                penaltyModal.classList.remove('hidden'); // 答錯超過 1 題，彈出懲罰視窗
+                // 停止繼續執行後續的重設邏輯，等待使用者手動關閉懲罰視窗。
+				
+				// [新增] 呼叫後端 API 觸發馬達
+                fetch('/api/trigger-motor', { method: 'POST' })
+                    .then(res => console.log("懲罰指令已發送至馬達"))
+                    .catch(err => console.error("無法連接馬達 API", err));
+				
+                return; 
+            }
+            // ------------------------------------
+            
+            // 如果沒有觸發懲罰，則執行正常完成流程
+            isQuizCompleted = true; 
+            isSessionEndedWithPendingAction = false; // 解鎖下一輪倒數
+            
+            quizModal.classList.add('hidden'); // 關閉測驗視窗
+            
+            // 執行完全重設，允許下一輪開始
+            fullResetState(); 
+            timerStatus.textContent = "測驗完成！可開始新一輪倒數。";
+            timerStatus.classList.remove('text-red-600');
+            timerStatus.classList.add('text-green-600', 'font-bold');
+            
+            // 重設 AI 狀態，準備迎接下一輪檔案上傳
+            totalQuestions = 0; 
+            questionsAnsweredCount = 0;
+            incorrectAnswerCount = 0; // 確保重設計數
+        }
+		
+		// ----------------------------------------------------
+        // [新增] 定時檢查是否發生閉眼懲罰
+        // ----------------------------------------------------
+        function startEyePenaltyPolling() {
+            setInterval(() => {
+                // 每 1.5 秒檢查一次
+                fetch('/api/check-eye-penalty')
+                    .then(response => response.json())
+                    .then(data => {
+                        if (data.triggered) {
+                            console.log("偵測到閉眼懲罰，顯示視窗！");
+                            // 顯示懲罰視窗
+                            penaltyModal.classList.remove('hidden');
+                        }
+                    })
+                    .catch(err => {
+                        // 忽略連線錯誤，避免洗版
+                    });
+            }, 1500);
+        }
+
+        // 啟動輪詢
+        startEyePenaltyPolling();
+		
+
+        /**
+         * 處理檔案選擇 (不變)
+         */
+        pptUpload.addEventListener('change', (event) => {
+            uploadedFile = event.target.files[0];
+            if (uploadedFile) {
+                fileNameDisplay.textContent = `已選取檔案: ${uploadedFile.name}`;
+                analyzeBtn.disabled = false;
+                // 重設 AI 按鈕文字和樣式，因為剛選取新檔案
+                analyzeBtn.textContent = '啟動 AI 分析與出題';
+                analyzeBtn.classList.add('hover:bg-green-700');
+                analyzeBtn.classList.remove('disabled:bg-green-300');
+                
+                errorMessageDiv.classList.add('hidden');
+                analysisSuccessMessage.classList.add('hidden');
+                startQuizBtn.classList.add('hidden');
+                quizModalContent.innerHTML = '<p class="text-gray-500 italic">請先啟動 AI 分析以生成考題。</p>';
+            } else {
+                fileNameDisplay.textContent = '尚未選擇檔案。';
+                analyzeBtn.disabled = true;
+                analyzeBtn.textContent = '啟動 AI 分析與出題';
+            }
+            // 每次選擇新檔案，都應重設題目狀態
+            isQuizGenerated = false;
+            isQuizCompleted = false;
+        });
+
+        /**
+         * 處理 AI 分析按鈕點擊 (呼叫後端 API)
+         */
+        analyzeBtn.addEventListener('click', async () => {
+            if (!uploadedFile) return;
+
+            // 1. UI 狀態：載入中 & 重設懲罰計數
+            incorrectAnswerCount = 0; 
+            errorMessageDiv.classList.add('hidden');
+            analysisSuccessMessage.classList.add('hidden');
+            startQuizBtn.classList.add('hidden');
+            loadingSpinner.classList.remove('hidden');
+            analyzeBtn.disabled = true;
+            analyzeBtn.textContent = '分析中... 請稍候';
+            quizModalContent.innerHTML = '<p class="text-gray-500 italic">考題正在生成中...</p>';
+
+
+            try {
+                const formData = new FormData();
+                formData.append('ppt_file', uploadedFile); 
+                
+                const response = await fetch(BACKEND_API_URL, {
+                    method: 'POST',
+                    body: formData,
+                });
+
+                if (!response.ok) {
+                    const errorData = await response.json();
+                    throw new Error(errorData.error || `HTTP 錯誤：${response.status}`);
+                }
+                
+                // 4. 解析並儲存結果
+                generatedQuestionsData = await response.json();
+
+                // --- 設定 AI 狀態 ---
+                totalQuestions = generatedQuestionsData.length;
+                isQuizGenerated = true;
+                isQuizCompleted = false; // 成功生成題目後，設定為未完成狀態
+                questionsAnsweredCount = 0; // 重設作答計數
+                // ---------------------
+
+                // 5. 顯示結果並啟用作答按鈕
+                renderQuestions(generatedQuestionsData); 
+                analysisSuccessMessage.classList.remove('hidden');
+                startQuizBtn.classList.remove('hidden');
+                errorMessageDiv.classList.add('hidden'); 
+                
+                // 【關鍵修正】：成功生成考題後禁用按鈕
+                analyzeBtn.disabled = true; 
+                analyzeBtn.textContent = '已成功生成考題 (請作答)';
+                analyzeBtn.classList.remove('hover:bg-green-700'); 
+                analyzeBtn.classList.add('disabled:bg-green-300'); // 強制灰色顯示
+                
+                // --- 新增邏輯：如果倒數已結束且在等待題目，立即開啟測驗視窗 ---
+                if (isSessionEndedWithPendingAction) {
+                    quizModal.classList.remove('hidden');
+                    timerStatus.textContent = "檔案分析成功！請完成模擬測驗以繼續下一輪。";
+                }
+                // -------------------------------------------------------------
+
+            } catch (error) {
+                // 6. 處理錯誤
+                errorMessageDiv.classList.remove('hidden');
+                errorMessageDiv.innerHTML = `<strong>AI 分析發生錯誤：</strong> ${error.message}`;
+                quizModalContent.innerHTML = '<p class="text-red-500 italic">考題生成失敗。</p>';
+                console.error("AI 分析失敗:", error);
+            } finally {
+                // 7. 重置按鈕狀態 (如果失敗則重新啟用)
+                loadingSpinner.classList.add('hidden');
+                
+                // 只有在生成失敗時才重新啟用按鈕
+                if (!isQuizGenerated) {
+                    analyzeBtn.disabled = false;
+                    analyzeBtn.textContent = '再次啟動 AI 分析與出題';
+                    analyzeBtn.classList.add('hover:bg-green-700');
+                    analyzeBtn.classList.remove('disabled:bg-green-300');
+                }
+                
+                pptUpload.value = ''; 
+                uploadedFile = null;
+                fileNameDisplay.textContent = '尚未選擇檔案。';
+            }
+        });
+
+
+        /**
+         * 檢查答案並提供回饋 (只計數，不立即彈出懲罰)
+         */
+        function checkAnswer(questionIndex, correctIndex, totalOptions) {
+            const feedbackEl = document.getElementById(`feedback-${questionIndex}`);
+            const checkBtn = document.getElementById(`check-btn-${questionIndex}`);
+            const nameGroup = `q-${questionIndex}-options`;
+            
+            const selectedRadio = document.querySelector(`input[name="${nameGroup}"]:checked`);
+            const selectedValue = selectedRadio ? parseInt(selectedRadio.value, 10) : null;
+            
+            feedbackEl.classList.remove('bg-green-50', 'bg-red-50', 'bg-yellow-100');
+
+            if (selectedValue === null) {
+                feedbackEl.innerHTML = '<span class="text-yellow-700 font-semibold">請先選擇一個答案！</span>';
+                feedbackEl.classList.add('bg-yellow-100', 'p-3', 'mt-3', 'rounded-lg');
+                feedbackEl.classList.remove('hidden');
+                return;
+            }
+
+            if (selectedValue === correctIndex) {
+                feedbackEl.innerHTML = '<span class="text-green-600 font-bold">✅ 恭喜，回答正確！</span>';
+                feedbackEl.classList.add('bg-green-50');
+            } else {
+                // --- 僅計數，不立即彈出懲罰 ---
+                incorrectAnswerCount++; 
+                // -----------------------------
+                
+                const correctLetter = String.fromCharCode(65 + correctIndex);
+                feedbackEl.innerHTML = `<span class="text-red-600 font-bold">❌ 回答錯誤。</span> 正確答案是 ${correctLetter}。`;
+                feedbackEl.classList.add('bg-red-50');
+            }
+
+            checkBtn.disabled = true;
+            // 禁用所有選項
+            for (let i = 0; i < totalOptions; i++) {
+                document.getElementById(`q-${questionIndex}-opt-${i}`).disabled = true;
+            }
+            feedbackEl.classList.remove('hidden');
+            feedbackEl.classList.add('p-3', 'mt-3', 'rounded-lg');
+            
+            // --- 作答計數與完成檢查 ---
+            questionsAnsweredCount++;
+            if (questionsAnsweredCount === totalQuestions) {
+                // 所有題目都已回答完畢，延遲 1 秒執行完成處理 (此處將觸發懲罰檢查)
+                setTimeout(handleQuizCompletion, 1000); 
+            }
+            // ----------------------------------
+        }
+
+        /**
+         * 將問題渲染到 UI 上 (渲染到 Modal 內容區)
+         */
+        function renderQuestions(questions) {
+            quizModalContent.innerHTML = ''; 
+            
+            questions.forEach((qData, qIndex) => {
+                const qContainer = document.createElement('div');
+                qContainer.id = `q-container-${qIndex}`;
+                qContainer.className = 'question-card border border-gray-200 p-6 rounded-xl shadow-lg bg-white transition duration-300 hover:shadow-xl'; 
+                
+                // 1. 問題標題
+                qContainer.innerHTML = `
+                    <p class="text-xl font-bold text-gray-800 mb-5 border-b-2 border-indigo-100 pb-2">
+                        <span class="text-indigo-600 mr-2">考題 ${qIndex + 1}.</span> ${qData.q}
+                    </p>
+                    <div id="options-group-${qIndex}" class="space-y-4">
+                        </div>
+                    <div id="feedback-${qIndex}" class="hidden mt-4 transition duration-300">
+                        </div>
+                    <button id="check-btn-${qIndex}" 
+                            class="mt-6 w-full bg-green-600 hover:bg-green-700 text-white font-semibold py-3 px-4 rounded-xl transition duration-200 shadow-md focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-offset-2">
+                        檢查答案
+                    </button>
+                `;
+                
+                const optionsGroup = qContainer.querySelector(`#options-group-${qIndex}`);
+                const options = qData.options;
+                
+                // 2. 選項 (Radio Buttons)
+                options.forEach((optionText, optIndex) => {
+                    const optionId = `q-${qIndex}-opt-${optIndex}`;
+                    const nameGroup = `q-${qIndex}-options`;
+                    const optionLetter = String.fromCharCode(65 + optIndex);
+
+                    const optionDiv = document.createElement('div');
+                    optionDiv.className = 'flex items-center p-4 border border-gray-300 rounded-xl bg-gray-50 hover:bg-indigo-100/50 cursor-pointer transition duration-150 shadow-sm';
+                    optionDiv.innerHTML = `
+                        <input type="radio" id="${optionId}" name="${nameGroup}" value="${optIndex}" class="h-6 w-6 text-indigo-600 focus:ring-indigo-500 border-gray-300 cursor-pointer">
+                        <label for="${optionId}" class="ml-4 block text-base font-medium text-gray-700 w-full cursor-pointer">
+                            <span class="font-bold text-indigo-700">${optionLetter}.</span> ${optionText}
+                        </label>
+                    `;
+                    optionDiv.addEventListener('click', (e) => {
+                        if (e.target !== document.getElementById(optionId)) {
+                            document.getElementById(optionId).checked = true;
+                        }
+                    });
+                    optionsGroup.appendChild(optionDiv);
+                });
+
+                // 3. 監聽檢查按鈕
+                const checkBtn = qContainer.querySelector(`#check-btn-${qIndex}`);
+                const correctIndex = parseInt(qData.correctAnswerIndex, 10);
+                const totalOptions = qData.options.length;
+
+                checkBtn.addEventListener('click', () => {
+                    checkAnswer(qIndex, correctIndex, totalOptions);
+                });
+
+                quizModalContent.appendChild(qContainer);
+            });
+        }
+        
+        // ----------------------------------------------------
+        // 3. 測驗、懲罰與**說明**視窗 (Modal) 邏輯
+        // ----------------------------------------------------
+
+        // --- 系統說明 Modal 邏輯 ---
+        const instructionsModal = document.getElementById('instructions-modal');
+        const openInstructionsBtn = document.getElementById('open-instructions-btn');
+        const closeInstructionsModalBtn = document.getElementById('close-instructions-modal-btn');
+
+        openInstructionsBtn.addEventListener('click', () => {
+            instructionsModal.classList.remove('hidden');
+        });
+
+        closeInstructionsModalBtn.addEventListener('click', () => {
+            instructionsModal.classList.add('hidden');
+        });
+
+        instructionsModal.addEventListener('click', (e) => {
+            if (e.target === instructionsModal) {
+                instructionsModal.classList.add('hidden');
+            }
+        });
+        // --- 結束系統說明 Modal 邏輯 ---
+
+
+        // 點擊「我要作答」按鈕，打開視窗
+        startQuizBtn.addEventListener('click', () => {
+            quizModal.classList.remove('hidden');
+        });
+
+        // 點擊關閉按鈕，關閉視窗 (除非測驗完成，否則不能關閉！)
+        closeQuizModalBtn.addEventListener('click', () => {
+             if (isQuizCompleted) {
+                quizModal.classList.add('hidden');
+            } else {
+                 timerStatus.textContent = "請先完成上輪的 AI 模擬測驗！";
+                 timerStatus.classList.add('text-red-600', 'font-bold');
+            }
+        });
+
+        // 點擊視窗外部區域，關閉視窗 (除非測驗完成，否則不能關閉！)
+        quizModal.addEventListener('click', (e) => {
+            if (e.target === quizModal) {
+                 if (isQuizCompleted) {
+                    quizModal.classList.add('hidden');
+                } else {
+                    timerStatus.textContent = "請先完成上輪的 AI 模擬測驗！";
+                    timerStatus.classList.add('text-red-600', 'font-bold');
+                }
+            }
+        });
+
+        /**
+         * 懲罰視窗關閉後的清理和重設邏輯
+         */
+        function completeResetAfterPenalty() {
+             isQuizCompleted = true; 
+             isSessionEndedWithPendingAction = false; 
+             quizModal.classList.add('hidden'); // 關閉測驗視窗
+             fullResetState(); 
+             timerStatus.textContent = "測驗完成！已解除鎖定，可開始新一輪倒數。";
+             timerStatus.classList.remove('text-red-600');
+             timerStatus.classList.add('text-green-600', 'font-bold');
+             totalQuestions = 0; 
+             questionsAnsweredCount = 0;
+             incorrectAnswerCount = 0;
+        }
+
+        // 點擊「我知道了」按鈕，關閉懲罰視窗
+        closePenaltyModalBtn.addEventListener('click', () => {
+            penaltyModal.classList.add('hidden');
+            
+            // 【重要修正】：手動關閉懲罰視窗後，執行測驗完成後的重設動作
+            // 必須是所有題目都回答完畢，且確實觸發了懲罰
+            if (questionsAnsweredCount === totalQuestions && incorrectAnswerCount > 1) {
+                completeResetAfterPenalty();
+            }
+        });
+
+        // 點擊視窗外部區域，關閉懲罰視窗
+        penaltyModal.addEventListener('click', (e) => {
+            if (e.target === penaltyModal) {
+                penaltyModal.classList.add('hidden');
+
+                // 【重要修正】：外部點擊關閉懲罰視窗後，執行測驗完成後的重設動作
+                if (questionsAnsweredCount === totalQuestions && incorrectAnswerCount > 1) {
+                    completeResetAfterPenalty();
+                }
+            }
+        });
+        
+        // [新增] 定時向後端查詢 NFC 狀態 (整合到前端介面)
+        // ----------------------------------------------------
+        function startNfcPolling() {
+            setInterval(() => {
+                fetch('/api/get-nfc-status')
+                    .then(response => response.json())
+                    .then(data => {
+                        const isPlaced = data.placed;
+                        
+                        // 更新全域變數 (如果你有用到)
+                        // 更新 UI 顯示
+                        // 這裡我們直接操作你現有的 nfcStatusText 元素
+                        
+                        // 模擬原本倒數計時器裡的 updateNfcStatusDisplay 邏輯
+                        // 但現在是由真實硬體驅動
+                        
+                        const baseClasses = 'text-base font-medium text-center py-2 px-3 rounded-lg transition duration-300 mb-6 flex items-center justify-center border-2';
+                        
+                        if (isPlaced) {
+                            // 狀態: 已放置 (綠色)
+                            nfcStatusText.textContent = '物品已放置 (感測中)';
+                            nfcStatusText.className = 'text-green-600 font-bold ml-1';
+                            nfcDisplay.className = `${baseClasses} bg-green-100 border-green-400`;
+                            nfcIcon.classList.remove('text-gray-500', 'text-yellow-700', 'text-red-600');
+                            nfcIcon.classList.add('text-green-600');
+                        } else {
+                            // 狀態: 未放置 (灰色或黃色)
+                            nfcStatusText.textContent = '請放置物品以開始';
+                            nfcStatusText.className = 'text-red-600 font-bold ml-1';
+                            nfcDisplay.className = `${baseClasses} bg-red-100 border-red-400`;
+                            nfcIcon.classList.remove('text-green-600');
+                            nfcIcon.classList.add('text-red-600');
+                        }
+                    })
+                    .catch(err => {
+                        // 連線錯誤時忽略
+                    });
+            }, 1000); // 每 1 秒更新一次
+        }
+
+        // 啟動輪詢
+        startNfcPolling();
+
+        // [新增] 網頁載入時，同步後端狀態 (防止重整後鎖死)
+        // ----------------------------------------------------
+        function syncServerState() {
+            fetch('/api/get-nfc-status')
+                .then(response => response.json())
+                .then(data => {
+                    const isFocusMode = data.focus_mode; // 從後端取得專注狀態
+                    
+                    if (isFocusMode) {
+                        console.log(">>> 偵測到後端正在專注模式，恢復 UI 鎖定狀態");
+                        
+                        // 1. 鎖定輸入框
+                        hoursInput.disabled = true;
+                        minutesInput.disabled = true;
+                        secondsInput.disabled = true;
+                        
+                        // 2. 恢復按鈕狀態
+                        startText.textContent = "專注進行中 (已恢復)";
+                        startBtn.disabled = true;
+                        
+                        pauseBtn.disabled = true; // 恢復模式下暫不支援暫停 (因為計時器變數已遺失)
+                        pauseText.textContent = "無法暫停";
+                        
+                        resetBtn.textContent = "提前結束"; // 關鍵！讓你可以按這個來解除
+                        resetBtn.disabled = false;
+                        
+                        // 3. 更新狀態文字
+                        timerStatus.textContent = "網頁已重新整理，專注模式仍在進行中...";
+                        timerStatus.classList.remove('text-red-600');
+                        timerStatus.classList.add('text-indigo-800', 'font-bold');
+                        
+                        // 4. (選用) 為了美觀，可以將計時器顯示為 "--:--" 或保持 00:00:00
+                        // 因為前端沒辦法知道後端剩幾秒 (除非後端有記)，所以先顯示狀態即可
+                        timerDisplay.textContent = "Running..."; 
+                    }
+                })
+                .catch(err => console.error("無法同步狀態:", err));
+        }
+
+        // 綁定到網頁載入事件
+        window.addEventListener('DOMContentLoaded', syncServerState);
+        
+    </script>
+</body>
+</html>
