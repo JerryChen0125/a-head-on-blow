@@ -3,14 +3,14 @@
 我們每個組員都很容易分心，念書時若手機放旁邊會造成念書五分鐘滑手機一小時，念書效率極低。而且在這個人人都在內卷的時代，若我們繼續維持這個壞習慣，會導致我們連書本目錄都讀不完。
 為此設計一套讓使用者可以提升專注力的系統。系統會自動偵測使用者有無分心，若分心時將觸發懲罰。
 
-沿用大二下計算機組織的課程成果-機械手臂，加上可偵測NFC的RFID板，以及偵測人臉與動作的鏡頭，利用杜邦線、Python(3.13.5)與Raspberry pi 4(Model B)內建的NetworkManager建立獨立熱點，實現Windows與Raspberry pi的無線直連。
+沿用大二下計算機組織的課程成果-機械手臂，加上可偵測NFC的RFID板，以及偵測人臉與動作的鏡頭，利用杜邦線、Python與Raspberry pi 4(Model B)內建的NetworkManager建立獨立熱點，實現Windows與Raspberry pi的無線直連。
 
 Windows與Raspberry pi無線直連設定原理:
 利用 nmcli 指令將網卡 (wlan0) 設定為熱點模式，並指定固定 IP，使樹莓派充當 DHCP Server 分配 IP 給連入的電腦
 
 ---
 ## Implementation Resources
-* 機械手臂( MG996R(180度)，冰棒棍)
+* 機械手臂(MG996R(180度)，冰棒棍)
 ![180169](https://github.com/user-attachments/assets/98b88542-eab8-42ea-9301-14020c7e2927)
 * Raspberry pi 4
 * 電池盒/電池
@@ -33,7 +33,7 @@ Windows與Raspberry pi無線直連設定原理:
 ---
 ## Implementation Process
 ### 線路圖(MG996R)
-| MG996R | 樹梅派腳位(Physical Pin) | 功能(BCM GPIO) |
+| MG996R | 樹莓派腳位(Physical Pin) | 功能(BCM GPIO) |
 | :--- | :--- | :--- |
 | Servo 1 | Pin 11 | GPIO 17 |
 ### RC522 腳位對照表
@@ -53,7 +53,7 @@ Windows與Raspberry pi無線直連設定原理:
 
 ---
 ## Knowledge from Lecture
-樹莓派上有開啟轉發功能，而電腦透過樹莓派對外連線，所以電腦上的流量都須經過樹莓派上forward。
+樹莓派上有開啟轉發功能，而電腦透過樹莓派對外連線，所以電腦上的流量會經過樹莓派上forward。
 
 iptables設定:
 ` 指令 -> sudo iptables -A FORWARD -d [目標IP] -j DROP `
@@ -65,61 +65,56 @@ iptables設定:
 
 ---
 ## Challenge
-一、 樹莓派環境與硬體層面 (Raspberry Pi Environment)
+一、 樹莓派環境與硬體層面
 1. Python 版本過新導致套件災難
 
-困難：樹莓派 OS 預設為 Python 3.13 (非常新)，導致 pigpio、opencv-python 等硬體控制庫無法透過 pip 正常編譯安裝，環境一直報錯。
-解決方案：
-放棄純 pip 安裝，改用 系統級套件 (sudo apt install python3-opencv ...)。
+困難：樹莓派 OS 預設為 Python 3.13 (非常新)，導致 pigpio、opencv-python 等硬體控制庫無法透過 pip 正常編譯安裝，環境一直報錯。<br>
+解決方案：放棄純 pip 安裝，改用 系統級套件 (sudo apt install python3-opencv ...)。
 建立虛擬環境時加上 -system-site-packages 參數，讓虛擬環境能繼承系統安裝好的穩定版驅動。
 
-二、 跨裝置通訊與網路架構 (Network & Communication)
+二、 跨裝置通訊與網路架構
 1. USB 轉 TTL (Serial) 連線失敗
 
-困難：最初嘗試用 USB 線傳輸訊號，但遇到 Windows 驅動程式問題 (COM port not found, Access Denied)，且不穩定。
-解決方案：
-放棄 Serial，改用網路架構。讓 PC 當 Server (Flask)，Pi 當 Client (Requests)，透過 HTTP API 溝通。
+困難：最初嘗試用 USB 線傳輸訊號，但遇到 Windows 驅動程式問題 (COM port not found, Access Denied)，且不穩定。<br>
+解決方案：放棄 Serial，改用網路架構。讓 PC 當 Server (Flask)，Pi 當 Client (Requests)，透過 HTTP API 溝通。
 2. 乙太網路直連 (Ethernet) 不穩
 
-困難：改用網路線直連後，發生 Link is Down/Up 頻繁斷線，速度掉到 10Mbps，Ping 丟包率高。
-解決方案：
-發現是樹莓派 4 的 EEE (節能乙太網路) 與 Windows 網卡衝突。
+困難：改用網路線直連後，發生 Link is Down/Up 頻繁斷線，速度掉到 10Mbps，Ping 丟包率高。<br>
+解決方案：發現是樹莓派 4 的 EEE (節能乙太網路) 與 Windows 網卡衝突。
 使用 ethtool --set-eee eth0 eee off 強制關閉節能模式。
 最終為了展示穩定性，決定改用 Wi-Fi 區域網路 (MOLi/熱點) 取代實體線路。
 
-三、 軟體邏輯與前後端整合 (Software Logic)
+三、軟體邏輯與前後端整合
 1. 懲罰邏輯衝突
 
-困難：同時有「答錯題」、「閉眼」、「手機拿走」三種懲罰，容易造成馬達指令打架。
-解決方案：
-在樹莓派建立 優先級邏輯：答錯 (單次) > 手機遺失 (持續) > 閉眼 (單次)。
+困難：同時有「答錯題」、「閉眼」、「手機拿走」三種懲罰，容易造成馬達指令打架。<br>
+解決方案：在樹莓派建立優先級邏輯：答錯(單次) > 手機遺失(持續) > 閉眼(單次)。
 
-四、 防火牆控制功能 (Firewall / iptables)
+四、 防火牆控制功能(iptables)
 1. 如何控制 Windows 上網
 
-困難：原本想用網路線做 Gateway 控制，但設定繁瑣且線路不穩。
-解決方案：
-改用 邏輯控制：樹莓派透過 subprocess 執行 iptables 指令。
-針對特定 IP (FB/IG/Dcard) 進行 Forward Drop。
+困難：原本想用網路線做Gateway控制，但設定繁瑣且線路不穩。<br>
+解決方案：改用邏輯控制：樹莓派透過 subprocess 執行 iptables 指令。
+針對特定 IP (FB/IG/X/動漫瘋)進行 Forward Drop。
 
 
 ---
-## 使用指南 Usage
-* 倒數計時器
-* 檢測有無放置手機
-* AI生成題目
-* 鏡頭辨識動作
-* 機械手臂互動
-* 網頁阻擋
+## Usage
+* 倒數計時器:在瀏覽器中開啟LSA GUI.html，在左側區塊設定讀書時間，並按下開始倒數。
+* 檢測有無放置手機:在手機跟手機殼間放入感應卡，並將手機置於RFID上。
+* AI生成題目:在瀏覽器中開啟LSA GUI.html，在右側區塊上傳讀書內容的PDF檔，並按下啟動AI分析。
+* 鏡頭辨識動作:自動檢測使用者眼部。
+* 機械手臂互動:觸發懲罰機制會自動執行。
+* 網頁阻擋:倒數計時器開始後，電腦無法連線上FB/IG/X/動漫瘋。
 
 ![photo_6197028030606150867_x](https://github.com/user-attachments/assets/8e17be24-e369-43c5-b803-bdb1e7ee1749)
 
 
 ---
-### 未來展望
+## 可延伸、改進方向
 * 懲罰裝置升級
 * 改進手機放置區的設計
-* 避免使用者逃跑、提醒使用者的隨身裝置
+* 設計避免使用者逃跑、提醒使用者暫停過久的隨身裝置
 
 
 ---
