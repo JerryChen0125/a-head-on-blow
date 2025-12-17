@@ -1,16 +1,17 @@
 # 蠅頭痛擊
 ## Concept Development
-我們每個組員都很容易分心，念書時若手機放旁邊會造成念書五分鐘滑手機一小時，念書效率極低。而且在這個人人都在內卷的時代，若我們繼續維持這個壞習慣，會導致我們連書本目錄都讀不完。
-為此設計一套讓使用者可以提升專注力的系統。系統會自動偵測使用者有無分心，若分心時將觸發懲罰。
+我們每個組員都很容易分心，讀書時若手機放旁邊會造成讀書五分鐘滑手機一小時的情況，讀書效率極低。而且在這個競爭激烈的時代，若我們繼續維持這個壞習慣，會導致我們連書本目錄都讀不完，為此我們設計一套讓使用者可以提升專注力的系統。系統會自動偵測使用者有無分心，若分心時將觸發懲罰。
 
-沿用大二下計算機組織的課程成果-機械手臂，加上可偵測NFC的RFID板，以及偵測人臉與動作的鏡頭，利用杜邦線、Python與Raspberry pi 4(Model B)內建的NetworkManager建立獨立熱點，實現Windows與Raspberry pi的無線直連。
+沿用大二下計算機組織的課程成果-機械手臂，加上可偵測NFC的RFID板，以及偵測人臉與動作的鏡頭，利用實體接線、Python與Raspberry pi 4(Model B)內建的NetworkManager建立無線區域網路，實現Windows與Raspberry pi的無線直連。
 
 Windows與Raspberry pi無線直連設定原理:
-利用 nmcli 指令將網卡 (wlan0) 設定為熱點模式，並指定固定 IP，使樹莓派充當 DHCP Server 分配 IP 給連入的電腦
+利用 nmcli 指令將網卡 (wlan0) 設定為熱點模式，並指定固定 IP，使樹莓派充當 DHCP Server 分配 IP 給連入的電腦。
 
 ---
 ## Implementation Resources
-* 機械手臂(MG996R(180度)，冰棒棍)
+* 機械手臂(MG996R-180度、冰棒棍和齒輪組成)
+> 實體圖片 :
+
 ![180169](https://github.com/user-attachments/assets/98b88542-eab8-42ea-9301-14020c7e2927)
 * Raspberry pi 4
 * 電池盒/電池
@@ -18,7 +19,7 @@ Windows與Raspberry pi無線直連設定原理:
 * 鏡頭
 * 杜邦線
 * 蒼蠅拍
-* 熱熔膠
+* 熱熔膠/熱熔膠槍
 * RFID/感應卡
 
 
@@ -32,12 +33,14 @@ Windows與Raspberry pi無線直連設定原理:
 
 ---
 ## Implementation Process
-### 線路圖(MG996R)
+> MG996R 腳位對照表 :
+
 | MG996R | 樹莓派腳位(Physical Pin) | 功能(BCM GPIO) |
 | :--- | :--- | :--- |
 | Servo 1 | Pin 11 | GPIO 17 |
-### RC522 腳位對照表
-| RC522 腳位 | 樹莓派腳位 (Physical Pin) | 功能 (BCM GPIO) | 備註 |
+> RC522 腳位對照表 :
+
+| RC522 | 樹莓派腳位 (Physical Pin) | 功能 (BCM GPIO) | 備註 |
 | :--- | :--- | :--- | :--- |
 | SDA(SS) | Pin 24 | GPIO 8 | 片選訊號 |
 | SCK | Pin 23 | GPIO 11 | 時鐘 |
@@ -46,22 +49,30 @@ Windows與Raspberry pi無線直連設定原理:
 | IRQ | (不接) | | 中斷 (用不到) |
 | GND | Pin 6 | Ground | 接地 |
 | RST | Pin 22 | GPIO 25 | 重置腳 |
-| 3.3V | Pin 1 | 3.3V Power | ⚠️ 千萬別接 5V |
-### 整體線路圖
+| 3.3V | Pin 1 | 3.3V Power | 別接 5V |
+> 整體線路圖 :
+
 ![2684D8CF-08D4-4537-A986-77E6828CC25C](https://github.com/user-attachments/assets/c243d1ce-2f53-4934-a699-39e7248431d4)
 
 
 ---
 ## Knowledge from Lecture
-樹莓派上有開啟轉發功能，而電腦透過樹莓派對外連線，所以電腦上的流量會經過樹莓派上forward。
+* iptables
+  * Facebook : 31.13.87.36
+  * Instagram : 31.13.87.174
+  * X : 172.66.0.227 / 162.159.140.229
+  * 動漫瘋 : 104.18.2.197 / 104.18.3.197
+>電腦透過樹莓派對外連線。
 
 iptables設定:
 ` 指令 -> sudo iptables -A FORWARD -d [目標IP] -j DROP `
-* Facebook : 31.13.87.36
-* Instagram : 31.13.87.174
-* X : 172.66.0.227 / 162.159.140.229
-* 動漫瘋 : 104.18.2.197 / 104.18.3.197
 
+---
+
+## Installation
+* 電腦上
+樹莓派上有開啟轉發功能，而電腦透過樹莓派對外連線，所以電腦上的流量會經過樹莓派上forward。
+* 樹梅派上
 
 ---
 ## Challenge
@@ -100,12 +111,13 @@ iptables設定:
 
 ---
 ## Usage
-* 倒數計時器:在瀏覽器中開啟LSA GUI.html，在左側區塊設定讀書時間，並按下開始倒數。
-* 檢測有無放置手機:在手機跟手機殼間放入感應卡，並將手機置於RFID上。
-* AI生成題目:在瀏覽器中開啟LSA GUI.html，在右側區塊上傳讀書內容的PDF檔，並按下啟動AI分析。
-* 鏡頭辨識動作:自動檢測使用者眼部。
-* 機械手臂互動:觸發懲罰機制會自動執行。
-* 網頁阻擋:倒數計時器開始後，電腦無法連線上FB/IG/X/動漫瘋。
+* 倒數計時器 : 在瀏覽器中開啟LSA GUI.html，在左側區塊設定讀書時間，並按下開始倒數。
+* 檢測有無放置手機 : 在手機跟手機殼間放入感應卡，並將手機置於RFID上。
+* AI生成題目 : 在瀏覽器中開啟LSA GUI.html，在右側區塊上傳讀書內容的PDF檔，並按下啟動AI分析。
+* 鏡頭辨識動作 : 自動檢測使用者眼部。
+* 機械手臂互動 : 觸發懲罰機制會自動執行。
+* 網頁阻擋 : 倒數計時器開始後，電腦無法連線上FB/IG/X/動漫瘋。
+> 簡易的運作流程圖 :
 
 ![photo_6197028030606150867_x](https://github.com/user-attachments/assets/8e17be24-e369-43c5-b803-bdb1e7ee1749)
 
@@ -118,18 +130,17 @@ iptables設定:
 
 
 ---
-## Costs
-* RFID(含感應卡) : 150
-* 齒輪 : 475
-* 色環電阻 : 5
-* 伺服馬達MG996R(三顆) : 297
-* 電池座 : 10
-* 麵包板 : 30
-* 冰棒棍(兩包) : 64
-* 熱熔膠槍 : 220
-* 熱熔膠 : 45
-* 蒼蠅拍 : 10
-
+## Expenses
+* RFID(含感應卡) : NT$150
+* 齒輪 : NT$33
+* 伺服馬達MG996R(三顆) : NT$297
+* 電池座 : NT$10
+* 麵包板 : NT$30
+* 冰棒棍(兩包) : NT$64
+* 熱熔膠槍 : NT$220
+* 熱熔膠 : NT$45
+* 蒼蠅拍 : NT$10
+> 總花費約 : NT$859
 
 ---
 ## Job Assignment
@@ -144,16 +155,13 @@ iptables設定:
 
 ---
 ## References
-* https://projecthub.arduino.cc/milespeterson101/arduino-robotic-arm-8b8601?_gl=1*1j361wp*_up*MQ..*_ga*MTEyNzU2NDk1Ni4xNzQyMjY1NjU5*_ga_NEXN8H46L5*MTc0MjI2NTY1OS4xLjAuMTc0MjI2NTY1OS4wLjAuMTI5MjYxODA5MQ
+* [機械手臂雛型參考](https://projecthub.arduino.cc/milespeterson101/arduino-robotic-arm-8b8601?_gl=1*1j361wp*_up*MQ..*_ga*MTEyNzU2NDk1Ni4xNzQyMjY1NjU5*_ga_NEXN8H46L5*MTc0MjI2NTY1OS4xLjAuMTc0MjI2NTY1OS4wLjAuMTI5MjYxODA5MQ)
 
-* https://dic.vbird.tw/iot_pi/unit06.php
+* [認識GPIO腳位](https://dic.vbird.tw/iot_pi/unit06.php)
 
-* https://blog.gtwang.org/programming/opencv-basic-image-read-and-write-tutorial/
+* [RFID與樹梅派整合](https://micro.rohm.com/tw/deviceplus/connect/integrate-rfid-module-raspberry-pi/)
 
-* https://micro.rohm.com/tw/deviceplus/connect/integrate-rfid-module-raspberry-pi/
-
-* https://hackmd.io/@ncnu-opensource/book/https%3A%2F%2Fhackmd.io%2F%40jMUBFtWoRvenRfXiggZ8Tg%2FHk438Ruaee
-
+* [iptables上課講義參考](https://hackmd.io/@ncnu-opensource/book/https%3A%2F%2Fhackmd.io%2F%40jMUBFtWoRvenRfXiggZ8Tg%2FHk438Ruaee)
 ---
 
 
