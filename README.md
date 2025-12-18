@@ -77,9 +77,14 @@
   * 安裝 Gemini API 開發套件 : `pip install google-generativeai`
   * 每次開啟 PowerShell 需輸入 : `$env:GEMINI_API_KEY = "你的API_KEY"`
   > GEMINI_API_KEY 可上 Google AI Studio ，左下方點選Get API key 來創建獲取。
-* 樹莓派上 : 
+* 樹莓派上 :
+  * 更新套件清單 : `sudo apt update`
+  * 安裝 Python 的 Requests 庫 : `sudo apt install python3-requests`
+  * 安裝 SPI 介面工具(控制硬體針腳) : `sudo apt install python3-dev python3-spidev`
+  * 安裝 MFRC522 驅動庫 : `pip3 install mfrc522`
   * OpenCV 視窗 : `sudo apt install libgl1`
   * OpenCV : `sudo apt install python3-opencv`
+  * pigpio : 因為太新所以用原始碼編譯 (Make Install)的方式下載，每次手動輸入 sudo pigpiod 啟動
   * 編譯 Pigpio (解決馬達抖動) : `sudo apt install build-essential unzip`
   * iptables指令參考 (在實作中是腳本控制，位於face_monitor.py) :
      * `sudo iptables -A FORWARD -d 31.13.87.36 -j DROP`
