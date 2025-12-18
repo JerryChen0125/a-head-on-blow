@@ -64,9 +64,12 @@
   * Instagram : 31.13.87.174
   * X : 172.66.0.227 / 162.159.140.229
   * 動漫瘋 : 104.18.2.197 / 104.18.3.197
->電腦透過樹莓派對外連線。指令參考 : `sudo iptables -A FORWARD -d [目標IP] -j DROP `
-
-
+>電腦透過樹莓派對外連線，要使指令生效則須將規則寫在 FORWARD 上。指令 : `sudo iptables -A FORWARD -d [目標IP] -j DROP `，將目標IP替換成上述列出的 IP 。
+* 建立網卡(用 NetworkManager 建立熱點連線)
+  * 建立連線設定 : `sudo nmcli con add type wifi ifname wlan0 con-name "MyHotspot" autoconnect yes ssid "Pi_Filter"`
+  * 設定加密模式與密碼 (WPA2A) : `sudo nmcli con modify "MyHotspot" 802-11-wireless.mode ap 802-11-wireless.band bg ipv4.method shared wifi-sec.key-mgmt wpa-psk wifi-sec.psk "12345678"`
+  * 將樹莓派的 IP 固定為 192.168.4.1 (或是其他你喜歡的網段) : `sudo nmcli con modify "MyHotspot" ipv4.addresses 192.168.4.1/24`
+  * 啟動熱點 : `sudo nmcli con up "MyHotspot"`
 
 ## Installation
 * 電腦上 :
