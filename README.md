@@ -9,7 +9,9 @@
 * 機械手臂(MG996R-180度、冰棒棍和齒輪組成)
 > 實體圖片 :
 
-![180169](https://github.com/user-attachments/assets/98b88542-eab8-42ea-9301-14020c7e2927)
+<img width="494" height="648" src="https://github.com/user-attachments/assets/c6d3f539-2ad5-4aea-9c66-a62ae3916117" />
+
+
 * Raspberry pi 4
 * 電池盒/電池
 * 麵包板
@@ -31,7 +33,7 @@
 
 ## Implementation Process
 > 架構圖 :
-<img width="581" height="212" alt="LSA期末專案 drawio (2)" src="https://github.com/user-attachments/assets/56c78b81-6436-4268-a663-dc96c74223a4" />
+<img width="541" height="212" alt="LSA期末專案 drawio (2)" src="https://github.com/user-attachments/assets/56c78b81-6436-4268-a663-dc96c74223a4" />
 
 > MG996R 腳位對照表 :
 
@@ -67,7 +69,8 @@
 
 
 ## Installation
-* 電腦上 : 
+* 電腦上 :
+  * 安裝 Web API 相關套件 : `pip install flask flask-cors`
   * 安裝 Gemini API 開發套件 : `pip install google-generativeai`
   * 每次開啟 PowerShell 需輸入 : `$env:GEMINI_API_KEY = "你的API_KEY"`
   > GEMINI_API_KEY 可上 Google AI Studio ，左下方點選Get API key 來創建獲取。
