@@ -1,8 +1,8 @@
 # 蠅頭痛擊
 ## Concept Development
-&emsp;&emsp;我們每個組員都很容易分心，讀書時若手機放旁邊會造成讀書五分鐘滑手機一小時的情況，讀書效率極低。而且在這個競爭激烈的時代，若我們繼續維持這個壞習慣，會導致我們連書本目錄都讀不完，為此我們設計一套讓使用者可以提升專注力的系統。系統會自動偵測使用者有無分心，若分心時將觸發懲罰。
+我們每個組員都很容易分心，讀書時若手機放旁邊會造成讀書五分鐘滑手機一小時的情況，讀書效率極低。而且在這個競爭激烈的時代，若我們繼續維持這個壞習慣，會導致我們連書本目錄都讀不完，為此我們設計一套讓使用者可以提升專注力的系統。系統會自動偵測使用者有無分心，若分心時將觸發懲罰。
 
-&emsp;&emsp;沿用大二下計算機組織的課程成果-機械手臂，加上可偵測NFC的RFID板，以及偵測人臉與動作的鏡頭，利用實體接線、Python與Raspberry pi 4(Model B)內建的NetworkManager建立無線區域網路，實現Windows與Raspberry pi的無線直連。
+沿用大二下計算機組織的課程成果-機械手臂，加上可偵測NFC的RFID板，以及偵測人臉與動作的鏡頭，利用實體接線、Python與Raspberry pi 4(Model B)內建的NetworkManager建立無線區域網路，實現Windows與Raspberry pi的無線直連。
 
 
 ## Implementation Resources
@@ -22,14 +22,17 @@
 
 
 ## Existing Library/Software
-* Python:(3.13.5)
-* OpenCV：(4.12.0.88)
-* gpiozero：(2.0.1)
-* pigpio：(1.78)
+* Python : (3.13.5)
+* OpenCV : (4.12.0.88)
+* gpiozero : (2.0.1)
+* pigpio : (1.78)
 * API服務 : (gemini-2.5-flash)
 
 
 ## Implementation Process
+> 架構圖 :
+<img width="581" height="212" alt="LSA期末專案 drawio (2)" src="https://github.com/user-attachments/assets/56c78b81-6436-4268-a663-dc96c74223a4" />
+
 > MG996R 腳位對照表 :
 
 | MG996R | 樹莓派腳位(Physical Pin) | 功能(BCM GPIO) |
@@ -59,8 +62,7 @@
   * Instagram : 31.13.87.174
   * X : 172.66.0.227 / 162.159.140.229
   * 動漫瘋 : 104.18.2.197 / 104.18.3.197
->電腦透過樹莓派對外連線。
-` 指令 -> sudo iptables -A FORWARD -d [目標IP] -j DROP `
+>電腦透過樹莓派對外連線。指令參考 : `sudo iptables -A FORWARD -d [目標IP] -j DROP `
 
 
 
@@ -73,7 +75,13 @@
   * OpenCV 視窗 : `sudo apt install libgl1`
   * OpenCV : `sudo apt install python3-opencv`
   * 編譯 Pigpio (解決馬達抖動) : `sudo apt install build-essential unzip`
-
+  * iptables指令參考 (在實作中是腳本控制，位於face_monitor.py) :
+     * `sudo iptables -A FORWARD -d 31.13.87.36 -j DROP`
+     * `sudo iptables -A FORWARD -d 31.13.87.174 -j DROP`
+     * `sudo iptables -A FORWARD -d 104.18.2.197 -j DROP`
+     * `sudo iptables -A FORWARD -d 104.18.3.197 -j DROP`
+     * `sudo iptables -A FORWARD -d 172.66.0.227 -j DROP`
+     * `sudo iptables -A FORWARD -d 162.159.140.229 -j DROP`
 
 
 ## Usage
@@ -120,7 +128,7 @@
 
 &emsp;困難：原本想用網路線做 Gateway 控制，但設定繁瑣且線路不穩。<br>
 >解決方案：改用邏輯控制：樹莓派透過 subprocess 執行 iptables 指令。
-針對特定 IP (FB/IG/X/動漫瘋)進行 Forward Drop。
+針對目標伺服器 IP (FB/IG/X/動漫瘋) 攔截轉發流量。
 
 
 ## 可延伸、改進方向
